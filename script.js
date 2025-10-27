@@ -8,6 +8,10 @@ class OTTTracker {
         this.watched = JSON.parse(localStorage.getItem('watched')) || [];
         this.currentTab = 'search-results';
         this.demoMode = localStorage.getItem('demo_mode') === 'true';
+        this.apiProvider = localStorage.getItem('api_provider') || 'tmdb';
+        
+        // Initialize alternative APIs
+        this.altAPIs = new AlternativeAPIs(this);
         
         // Load demo data if available
         this.loadDemoData();
@@ -57,6 +61,13 @@ class OTTTracker {
         document.getElementById('settings-toggle').addEventListener('click', () => this.toggleSettings());
         document.getElementById('update-api-key').addEventListener('click', () => this.updateApiKey());
         document.getElementById('clear-data').addEventListener('click', () => this.clearAllData());
+        
+        // API Provider selector
+        const apiSelect = document.getElementById('api-provider-select');
+        if (apiSelect) {
+            apiSelect.value = this.apiProvider;
+            apiSelect.addEventListener('change', () => this.changeApiProvider());
+        }
 
         // Close settings when clicking outside
         document.addEventListener('click', (e) => {
@@ -136,16 +147,30 @@ class OTTTracker {
             if (this.demoMode || !this.apiKey) {
                 results = this.searchDemoData(query, contentType);
             } else {
-                // Use TMDb API
-                const endpoint = contentType === 'multi' ? 'search/multi' : `search/${contentType}`;
-                const response = await fetch(`${this.baseURL}/${endpoint}?api_key=${this.apiKey}&query=${encodeURIComponent(query)}`);
-                
-                if (!response.ok) {
-                    throw new Error('Search failed');
+                // Use selected API provider
+                switch (this.apiProvider) {
+                    case 'omdb':
+                        results = await this.altAPIs.searchOMDb(query, this.apiKey);
+                        break;
+                    case 'tvmaze':
+                        if (contentType === 'movie') {
+                            throw new Error('TVMaze only supports TV shows. Switch to "TV Series" or "All".');
+                        }
+                        results = await this.altAPIs.searchTVMaze(query);
+                        break;
+                    default:
+                        // TMDb API
+                        const endpoint = contentType === 'multi' ? 'search/multi' : `search/${contentType}`;
+                        const response = await fetch(`${this.baseURL}/${endpoint}?api_key=${this.apiKey}&query=${encodeURIComponent(query)}`);
+                        
+                        if (!response.ok) {
+                            throw new Error('Search failed');
+                        }
+                        
+                        const data = await response.json();
+                        results = data.results;
+                        break;
                 }
-                
-                const data = await response.json();
-                results = data.results;
             }
             
             this.displaySearchResults(results);
@@ -224,6 +249,50 @@ class OTTTracker {
         this.checkApiKey();
     }
 
+    changeApiProvider() {
+        const select = document.getElementById('api-provider-select');
+        this.apiProvider = select.value;
+        localStorage.setItem('api_provider', this.apiProvider);
+        
+        // Update UI based on selected provider
+        this.updateApiProviderUI();
+        
+        this.showNotification(`Switched to ${this.getProviderName()} API`, 'success');
+    }
+
+    getProviderName() {
+        switch (this.apiProvider) {
+            case 'omdb': return 'OMDb';
+            case 'tvmaze': return 'TVMaze';
+            default: return 'TMDb';
+        }
+    }
+
+    updateApiProviderUI() {
+        const keyInput = document.getElementById('settings-api-key');
+        const keyLabel = document.querySelector('label[for="settings-api-key"]');
+        const apiInfo = document.getElementById('api-provider-info');
+        
+        if (this.apiProvider === 'tvmaze') {
+            keyInput.style.display = 'none';
+            keyLabel.style.display = 'none';
+            if (apiInfo) {
+                apiInfo.innerHTML = '✅ TVMaze API - No key required!';
+                apiInfo.style.color = 'var(--success-color)';
+            }
+        } else {
+            keyInput.style.display = 'block';
+            keyLabel.style.display = 'block';
+            if (apiInfo) {
+                const providerInfo = this.apiProvider === 'omdb' 
+                    ? 'Get free key at: <a href="http://www.omdbapi.com/" target="_blank">omdbapi.com</a>'
+                    : 'Get free key at: <a href="https://www.themoviedb.org/settings/api" target="_blank">TMDb</a>';
+                apiInfo.innerHTML = providerInfo;
+                apiInfo.style.color = 'var(--text-secondary)';
+            }
+        }
+    }
+
     displaySearchResults(results) {
         const container = document.getElementById('search-results-grid');
         container.innerHTML = '';
@@ -290,11 +359,30 @@ class OTTTracker {
 
     async showDetails(item) {
         const isMovie = item.media_type === 'movie' || item.title;
-        const endpoint = isMovie ? `movie/${item.id}` : `tv/${item.id}`;
         
         try {
-            const response = await fetch(`${this.baseURL}/${endpoint}?api_key=${this.apiKey}&append_to_response=credits,videos`);
-            const details = await response.json();
+            let details;
+            
+            if (this.demoMode || !this.apiKey) {
+                // Use item data directly for demo mode
+                details = item;
+            } else {
+                // Use selected API provider
+                switch (this.apiProvider) {
+                    case 'omdb':
+                        details = await this.altAPIs.getOMDbDetails(item.id, this.apiKey);
+                        break;
+                    case 'tvmaze':
+                        details = await this.altAPIs.getTVMazeDetails(item.id);
+                        break;
+                    default:
+                        // TMDb API
+                        const endpoint = isMovie ? `movie/${item.id}` : `tv/${item.id}`;
+                        const response = await fetch(`${this.baseURL}/${endpoint}?api_key=${this.apiKey}&append_to_response=credits,videos`);
+                        details = await response.json();
+                        break;
+                }
+            }
             
             this.displayDetails(details, isMovie);
             document.getElementById('detail-modal').style.display = 'block';

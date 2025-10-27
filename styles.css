@@ -140,6 +140,68 @@ body {
     font-size: 0.9rem;
 }
 
+.api-alternatives {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.api-alternatives h3 {
+    color: var(--accent-color);
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.alt-option {
+    background: var(--background-darker);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    margin-bottom: 0.75rem;
+    border: 1px solid var(--border-color);
+}
+
+.alt-option strong {
+    display: block;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.alt-option small {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.alt-option a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.alt-option a:hover {
+    text-decoration: underline;
+}
+
+.api-info {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: var(--background-darker);
+    border-radius: var(--border-radius);
+    font-size: 0.9rem;
+}
+
+.api-info a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.api-info a:hover {
+    text-decoration: underline;
+}
+
+#api-provider-select {
+    width: 100%;
+    margin-bottom: 0.5rem;
+}
+
 /* Input Groups */
 .api-input-group, .search-input-group {
     display: flex;
