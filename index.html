@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OTT Tracker - Your Personal Movie & Series Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1><i class="fas fa-film"></i> OTT Tracker</h1>
+                <p>Track your favorite movies and TV series</p>
+            </div>
+        </header>
+
+        <!-- API Key Setup -->
+        <div id="api-setup" class="api-setup">
+            <div class="api-card">
+                <h2><i class="fas fa-key"></i> Setup Required</h2>
+                <p>To use this app, you need a free TMDb API key:</p>
+                <ol>
+                    <li>Go to <a href="https://www.themoviedb.org/settings/api" target="_blank">TMDb API Settings</a></li>
+                    <li>Create a free account and request an API key</li>
+                    <li>Enter your API key below:</li>
+                </ol>
+                <div class="api-input-group">
+                    <input type="text" id="api-key-input" placeholder="Enter your TMDb API key">
+                    <button id="save-api-key" class="btn btn-primary">Save Key</button>
+                </div>
+                <div class="demo-option">
+                    <p><strong>Don't have an API key?</strong></p>
+                    <button id="demo-mode-btn" class="btn btn-secondary">
+                        <i class="fas fa-play"></i> Try Demo Mode
+                    </button>
+                    <small>Demo mode includes popular movies and TV shows for testing</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div id="main-content" class="main-content" style="display: none;">
+            <!-- Search Section -->
+            <section class="search-section">
+                <div class="search-container">
+                    <div class="search-input-group">
+                        <input type="text" id="search-input" placeholder="Search for movies or TV series...">
+                        <button id="search-btn" class="btn btn-primary">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                    <div class="search-filters">
+                        <select id="content-type">
+                            <option value="multi">All</option>
+                            <option value="movie">Movies</option>
+                            <option value="tv">TV Series</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Navigation Tabs -->
+            <nav class="nav-tabs">
+                <button class="nav-tab active" data-tab="search-results">Search Results</button>
+                <button class="nav-tab" data-tab="watchlist">My Watchlist</button>
+                <button class="nav-tab" data-tab="watched">Watched</button>
+            </nav>
+
+            <!-- Tab Content -->
+            <div class="tab-content">
+                <!-- Search Results Tab -->
+                <div id="search-results" class="tab-pane active">
+                    <div id="loading" class="loading" style="display: none;">
+                        <i class="fas fa-spinner fa-spin"></i> Searching...
+                    </div>
+                    <div id="search-results-grid" class="content-grid"></div>
+                </div>
+
+                <!-- Watchlist Tab -->
+                <div id="watchlist" class="tab-pane">
+                    <h2><i class="fas fa-bookmark"></i> My Watchlist</h2>
+                    <div id="watchlist-grid" class="content-grid"></div>
+                    <div id="watchlist-empty" class="empty-state">
+                        <i class="fas fa-bookmark"></i>
+                        <p>Your watchlist is empty</p>
+                        <small>Search for movies or series and add them to your watchlist!</small>
+                    </div>
+                </div>
+
+                <!-- Watched Tab -->
+                <div id="watched" class="tab-pane">
+                    <h2><i class="fas fa-check-circle"></i> Watched</h2>
+                    <div id="watched-grid" class="content-grid"></div>
+                    <div id="watched-empty" class="empty-state">
+                        <i class="fas fa-check-circle"></i>
+                        <p>No watched items yet</p>
+                        <small>Mark items as watched from your watchlist!</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Movie/Series Detail Modal -->
+        <div id="detail-modal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <div id="detail-content"></div>
+            </div>
+        </div>
+
+        <!-- Settings -->
+        <div class="settings-btn">
+            <button id="settings-toggle" class="btn btn-secondary">
+                <i class="fas fa-cog"></i>
+            </button>
+        </div>
+
+        <div id="settings-panel" class="settings-panel">
+            <h3>Settings</h3>
+            <div class="setting-item">
+                <label>API Key:</label>
+                <div class="api-input-group">
+                    <input type="text" id="settings-api-key" placeholder="Your TMDb API key">
+                    <button id="update-api-key" class="btn btn-primary">Update</button>
+                </div>
+            </div>
+            <div class="setting-item">
+                <button id="clear-data" class="btn btn-danger">Clear All Data</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="demo-data.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
