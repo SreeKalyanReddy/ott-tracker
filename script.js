@@ -7,29 +7,30 @@ class OTTTracker {
         this.watchlist = JSON.parse(localStorage.getItem('watchlist')) || [];
         this.watched = JSON.parse(localStorage.getItem('watched')) || [];
         this.currentTab = 'search-results';
-        this.demoMode = localStorage.getItem('demo_mode') === 'true';
-        this.apiProvider = localStorage.getItem('api_provider') || 'tmdb';
+        this.apiProvider = localStorage.getItem('api_provider') || 'omdb'; // Default to OMDb since it's easier to get
+        
+        // Auto-setup with your OMDb key if not already configured
+        if (!this.apiKey && !localStorage.getItem('setup_completed')) {
+            this.apiKey = '84855bfc'; // Your OMDb API key
+            localStorage.setItem('tmdb_api_key', this.apiKey);
+            localStorage.setItem('api_provider', 'omdb');
+            localStorage.setItem('setup_completed', 'true');
+        }
         
         // Initialize alternative APIs
         this.altAPIs = new AlternativeAPIs(this);
         
-        // Load demo data if available
-        this.loadDemoData();
-        
         this.init();
     }
 
-    loadDemoData() {
-        // Demo data will be loaded from separate script file
-        this.demoMovies = window.DEMO_MOVIES || [];
-        this.searchResults = window.SEARCH_RESULTS || {};
-    }
+
 
     init() {
         this.setupEventListeners();
         this.checkApiKey();
         this.updateWatchlistDisplay();
         this.updateWatchedDisplay();
+        this.populateHomepage();
     }
 
     setupEventListeners() {
@@ -38,7 +39,8 @@ class OTTTracker {
         document.getElementById('api-key-input').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.saveApiKey();
         });
-        document.getElementById('demo-mode-btn').addEventListener('click', () => this.startDemoMode());
+        document.getElementById('use-tvmaze').addEventListener('click', () => this.useTVMaze());
+        document.getElementById('initial-api-provider').addEventListener('change', () => this.updateInitialApiProvider());
 
         // Search functionality
         document.getElementById('search-btn').addEventListener('click', () => this.performSearch());
@@ -80,41 +82,56 @@ class OTTTracker {
     }
 
     checkApiKey() {
-        if (this.apiKey || this.demoMode) {
+        if (this.apiKey || this.apiProvider === 'tvmaze') {
             document.getElementById('api-setup').style.display = 'none';
             document.getElementById('main-content').style.display = 'block';
             document.getElementById('settings-api-key').value = this.apiKey;
             
-            // Show demo mode indicator
-            if (this.demoMode && !this.apiKey) {
-                this.showDemoModeIndicator();
-            }
+            // Load initial homepage content
+            this.populateHomepage();
         } else {
             document.getElementById('api-setup').style.display = 'block';
             document.getElementById('main-content').style.display = 'none';
         }
     }
 
-    showDemoModeIndicator() {
-        const indicator = document.createElement('div');
-        indicator.className = 'demo-indicator';
-        indicator.innerHTML = `
-            <i class="fas fa-info-circle"></i>
-            <span>Demo Mode - Limited content available</span>
-            <button onclick="ottTracker.exitDemoMode()" class="btn btn-secondary">Get API Key</button>
-        `;
-        document.querySelector('.header-content').appendChild(indicator);
-    }
-
     saveApiKey() {
         const apiKey = document.getElementById('api-key-input').value.trim();
-        if (apiKey) {
+        const provider = document.getElementById('initial-api-provider').value;
+        
+        if (apiKey || provider === 'tvmaze') {
             this.apiKey = apiKey;
+            this.apiProvider = provider;
             localStorage.setItem('tmdb_api_key', apiKey);
+            localStorage.setItem('api_provider', provider);
             this.checkApiKey();
-            this.showNotification('API key saved successfully!', 'success');
+            this.showNotification(`${this.getProviderName()} API configured successfully!`, 'success');
         } else {
             this.showNotification('Please enter a valid API key', 'error');
+        }
+    }
+
+    useTVMaze() {
+        this.apiProvider = 'tvmaze';
+        this.apiKey = '';
+        localStorage.setItem('api_provider', 'tvmaze');
+        localStorage.removeItem('tmdb_api_key');
+        this.checkApiKey();
+        this.showNotification('TVMaze API activated - TV shows only!', 'success');
+    }
+
+    updateInitialApiProvider() {
+        const provider = document.getElementById('initial-api-provider').value;
+        const keyInput = document.getElementById('api-key-input');
+        const saveBtn = document.getElementById('save-api-key');
+        
+        if (provider === 'tvmaze') {
+            keyInput.style.display = 'none';
+            saveBtn.textContent = 'Use TVMaze';
+        } else {
+            keyInput.style.display = 'block';
+            saveBtn.textContent = 'Save & Start';
+            keyInput.placeholder = provider === 'omdb' ? 'Enter your OMDb API key' : 'Enter your TMDb API key';
         }
     }
 
@@ -143,111 +160,48 @@ class OTTTracker {
         try {
             let results = [];
             
-            // Use demo data if in demo mode or no API key
-            if (this.demoMode || !this.apiKey) {
-                results = this.searchDemoData(query, contentType);
-            } else {
-                // Use selected API provider
-                switch (this.apiProvider) {
-                    case 'omdb':
-                        results = await this.altAPIs.searchOMDb(query, this.apiKey);
-                        break;
-                    case 'tvmaze':
-                        if (contentType === 'movie') {
-                            throw new Error('TVMaze only supports TV shows. Switch to "TV Series" or "All".');
-                        }
-                        results = await this.altAPIs.searchTVMaze(query);
-                        break;
-                    default:
-                        // TMDb API
-                        const endpoint = contentType === 'multi' ? 'search/multi' : `search/${contentType}`;
-                        const response = await fetch(`${this.baseURL}/${endpoint}?api_key=${this.apiKey}&query=${encodeURIComponent(query)}`);
-                        
-                        if (!response.ok) {
-                            throw new Error('Search failed');
-                        }
-                        
-                        const data = await response.json();
-                        results = data.results;
-                        break;
-                }
+            // Use selected API provider
+            switch (this.apiProvider) {
+                case 'omdb':
+                    if (!this.apiKey) {
+                        throw new Error('OMDb API key required. Please add your API key in settings.');
+                    }
+                    results = await this.altAPIs.searchOMDb(query, this.apiKey);
+                    break;
+                case 'tvmaze':
+                    if (contentType === 'movie') {
+                        throw new Error('TVMaze only supports TV shows. Switch to "TV Series" or "All".');
+                    }
+                    results = await this.altAPIs.searchTVMaze(query);
+                    break;
+                default:
+                    // TMDb API
+                    if (!this.apiKey) {
+                        throw new Error('TMDb API key required. Please add your API key in settings.');
+                    }
+                    const endpoint = contentType === 'multi' ? 'search/multi' : `search/${contentType}`;
+                    const response = await fetch(`${this.baseURL}/${endpoint}?api_key=${this.apiKey}&query=${encodeURIComponent(query)}`);
+                    
+                    if (!response.ok) {
+                        throw new Error('Search failed - check your API key');
+                    }
+                    
+                    const data = await response.json();
+                    results = data.results;
+                    break;
             }
             
             this.displaySearchResults(results);
             this.switchTab('search-results');
         } catch (error) {
             console.error('Search error:', error);
-            if (this.demoMovies && this.demoMovies.length > 0) {
-                this.showNotification('API failed, showing demo content', 'info');
-                this.enterDemoMode();
-                const results = this.searchDemoData(query, contentType);
-                this.displaySearchResults(results);
-            } else {
-                this.showNotification('Search failed. Please check your API key and try again.', 'error');
-            }
+            this.showNotification(error.message, 'error');
         }
         
         this.showLoading(false);
     }
 
-    searchDemoData(query, contentType) {
-        const lowerQuery = query.toLowerCase();
-        let results = [];
 
-        // Check specific search results first
-        for (const [key, items] of Object.entries(this.searchResults || {})) {
-            if (lowerQuery.includes(key) || key.includes(lowerQuery)) {
-                results = results.concat(items);
-            }
-        }
-
-        // If no specific results, search through all demo movies
-        if (results.length === 0 && this.demoMovies) {
-            results = this.demoMovies.filter(item => {
-                const title = item.title || item.name || '';
-                const overview = item.overview || '';
-                return title.toLowerCase().includes(lowerQuery) || 
-                       overview.toLowerCase().includes(lowerQuery);
-            });
-        }
-
-        // Filter by content type
-        if (contentType !== 'multi') {
-            results = results.filter(item => {
-                if (contentType === 'movie') {
-                    return item.title || item.media_type === 'movie';
-                } else if (contentType === 'tv') {
-                    return item.name || item.media_type === 'tv';
-                }
-                return true;
-            });
-        }
-
-        return results.slice(0, 20); // Limit results
-    }
-
-    enterDemoMode() {
-        this.demoMode = true;
-        localStorage.setItem('demo_mode', 'true');
-        this.checkApiKey();
-    }
-
-    startDemoMode() {
-        this.enterDemoMode();
-        this.showNotification('Demo mode activated! Try searching for "batman", "marvel", or "comedy"', 'success');
-        // Show some initial content
-        if (this.demoMovies && this.demoMovies.length > 0) {
-            this.displaySearchResults(this.demoMovies.slice(0, 8));
-        }
-    }
-
-    exitDemoMode() {
-        this.demoMode = false;
-        localStorage.removeItem('demo_mode');
-        const indicator = document.querySelector('.demo-indicator');
-        if (indicator) indicator.remove();
-        this.checkApiKey();
-    }
 
     changeApiProvider() {
         const select = document.getElementById('api-provider-select');
@@ -295,6 +249,11 @@ class OTTTracker {
 
     displaySearchResults(results) {
         const container = document.getElementById('search-results-grid');
+        const homepageSections = document.getElementById('homepage-sections');
+        
+        // Show search results, hide homepage
+        container.style.display = 'grid';
+        homepageSections.style.display = 'none';
         container.innerHTML = '';
 
         if (results.length === 0) {
@@ -309,6 +268,110 @@ class OTTTracker {
         }
 
         results.forEach(item => {
+            const card = this.createContentCard(item);
+            container.appendChild(card);
+        });
+    }
+
+    async populateHomepage() {
+        // Show homepage sections, hide search results
+        const container = document.getElementById('search-results-grid');
+        const homepageSections = document.getElementById('homepage-sections');
+        
+        container.style.display = 'none';
+        homepageSections.style.display = 'block';
+
+        try {
+            await this.loadTrendingContent();
+        } catch (error) {
+            console.error('Failed to load homepage content:', error);
+            this.showEmptyHomepage();
+        }
+    }
+
+    showEmptyHomepage() {
+        // Show message when no API key or API fails
+        document.getElementById('homepage-sections').innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-key"></i>
+                <p>API Key Required</p>
+                <small>Add your API key in settings to view trending content</small>
+                <br><br>
+                <button onclick="ottTracker.toggleSettings()" class="btn btn-primary">
+                    <i class="fas fa-cog"></i> Open Settings
+                </button>
+            </div>
+        `;
+    }
+
+    async loadTrendingContent() {
+        if (this.apiProvider === 'tmdb' && this.apiKey) {
+            // Load from TMDb API
+            const [trending, topRated, nowPlaying, tvShows] = await Promise.all([
+                fetch(`${this.baseURL}/trending/all/week?api_key=${this.apiKey}`).then(r => r.json()),
+                fetch(`${this.baseURL}/movie/top_rated?api_key=${this.apiKey}`).then(r => r.json()),
+                fetch(`${this.baseURL}/movie/now_playing?api_key=${this.apiKey}`).then(r => r.json()),
+                fetch(`${this.baseURL}/tv/popular?api_key=${this.apiKey}`).then(r => r.json())
+            ]);
+
+            this.populateSection('trending-grid', trending.results?.slice(0, 6) || []);
+            this.populateSection('top-rated-grid', topRated.results?.slice(0, 6) || []);
+            this.populateSection('new-releases-grid', nowPlaying.results?.slice(0, 6) || []);
+            this.populateSection('binge-series-grid', tvShows.results?.slice(0, 6) || []);
+            
+        } else if (this.apiProvider === 'omdb' && this.apiKey) {
+            // OMDb doesn't have trending endpoints, so search for popular terms
+            const popularSearches = ['batman', 'avengers', 'star wars', 'marvel', 'disney', 'netflix'];
+            const results = [];
+            
+            for (const term of popularSearches) {
+                try {
+                    const searchResults = await this.altAPIs.searchOMDb(term, this.apiKey);
+                    results.push(...searchResults.slice(0, 2)); // Take 2 from each search
+                    if (results.length >= 12) break;
+                } catch (error) {
+                    console.warn(`Failed to search for ${term}:`, error);
+                }
+            }
+            
+            // Distribute results across sections
+            const movies = results.filter(item => item.media_type === 'movie').slice(0, 6);
+            const tvShows = results.filter(item => item.media_type === 'tv').slice(0, 6);
+            
+            this.populateSection('trending-grid', results.slice(0, 6));
+            this.populateSection('new-releases-grid', movies);
+            this.populateSection('top-rated-grid', results.slice(6, 12));
+            this.populateSection('binge-series-grid', tvShows);
+            
+        } else if (this.apiProvider === 'tvmaze') {
+            // TVMaze for TV shows - search popular shows
+            const popularShows = ['breaking bad', 'stranger things', 'game of thrones', 'the office', 'friends', 'wednesday'];
+            const results = [];
+            
+            for (const show of popularShows) {
+                try {
+                    const searchResults = await this.altAPIs.searchTVMaze(show);
+                    results.push(...searchResults.slice(0, 1)); // Take 1 from each search
+                } catch (error) {
+                    console.warn(`Failed to search for ${show}:`, error);
+                }
+            }
+            
+            this.populateSection('trending-grid', results.slice(0, 6));
+            this.populateSection('binge-series-grid', results);
+            this.populateSection('new-releases-grid', results.slice(3, 9));
+            this.populateSection('top-rated-grid', results.slice(0, 6));
+        } else {
+            throw new Error('No API key provided');
+        }
+    }
+
+    populateSection(containerId, items) {
+        const container = document.getElementById(containerId);
+        if (!container || !items || items.length === 0) return;
+
+        container.innerHTML = '';
+        items.forEach(item => {
             const card = this.createContentCard(item);
             container.appendChild(card);
         });
@@ -363,32 +426,32 @@ class OTTTracker {
         try {
             let details;
             
-            if (this.demoMode || !this.apiKey) {
-                // Use item data directly for demo mode
-                details = item;
-            } else {
-                // Use selected API provider
-                switch (this.apiProvider) {
-                    case 'omdb':
-                        details = await this.altAPIs.getOMDbDetails(item.id, this.apiKey);
-                        break;
-                    case 'tvmaze':
-                        details = await this.altAPIs.getTVMazeDetails(item.id);
-                        break;
-                    default:
-                        // TMDb API
-                        const endpoint = isMovie ? `movie/${item.id}` : `tv/${item.id}`;
-                        const response = await fetch(`${this.baseURL}/${endpoint}?api_key=${this.apiKey}&append_to_response=credits,videos`);
-                        details = await response.json();
-                        break;
-                }
+            // Use selected API provider
+            switch (this.apiProvider) {
+                case 'omdb':
+                    details = await this.altAPIs.getOMDbDetails(item.id, this.apiKey);
+                    break;
+                case 'tvmaze':
+                    details = await this.altAPIs.getTVMazeDetails(item.id);
+                    break;
+                default:
+                    // TMDb API
+                    const endpoint = isMovie ? `movie/${item.id}` : `tv/${item.id}`;
+                    const response = await fetch(`${this.baseURL}/${endpoint}?api_key=${this.apiKey}&append_to_response=credits,videos`);
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to load details');
+                    }
+                    
+                    details = await response.json();
+                    break;
             }
             
             this.displayDetails(details, isMovie);
             document.getElementById('detail-modal').style.display = 'block';
         } catch (error) {
             console.error('Details error:', error);
-            this.showNotification('Failed to load details', 'error');
+            this.showNotification('Failed to load details - ' + error.message, 'error');
         }
     }
 
@@ -541,6 +604,15 @@ class OTTTracker {
         });
 
         this.currentTab = tabName;
+
+        // If switching back to home (search-results), show homepage
+        if (tabName === 'search-results') {
+            // Clear search input and show homepage if no active search
+            const searchInput = document.getElementById('search-input');
+            if (!searchInput.value.trim()) {
+                this.populateHomepage();
+            }
+        }
     }
 
     refreshCurrentView() {

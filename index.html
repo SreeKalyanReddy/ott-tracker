@@ -27,27 +27,37 @@
                     <li>Create a free account and request an API key</li>
                     <li>Enter your API key below:</li>
                 </ol>
+                <div class="api-selection">
+                    <label for="initial-api-provider">Choose API Provider:</label>
+                    <select id="initial-api-provider">
+                        <option value="omdb">OMDb (Recommended - Simple setup)</option>
+                        <option value="tvmaze">TVMaze (No key required - TV shows only)</option>
+                        <option value="tmdb">TMDb (Industry standard)</option>
+                    </select>
+                </div>
                 <div class="api-input-group">
-                    <input type="text" id="api-key-input" placeholder="Enter your TMDb API key">
-                    <button id="save-api-key" class="btn btn-primary">Save Key</button>
+                    <input type="text" id="api-key-input" placeholder="Enter your API key">
+                    <button id="save-api-key" class="btn btn-primary">Save & Start</button>
+                </div>
+                <div class="quick-setup">
+                    <button id="use-tvmaze" class="btn btn-secondary">
+                        <i class="fas fa-tv"></i> Use TVMaze (No Key Required)
+                    </button>
                 </div>
                 <div class="api-alternatives">
-                    <h3>Alternative Options:</h3>
+                    <h3>API Options:</h3>
                     <div class="alt-option">
-                        <strong>🎬 OMDb API</strong> - Simple email registration
-                        <small>Get key at: <a href="http://www.omdbapi.com/" target="_blank">omdbapi.com</a></small>
+                        <strong>🎬 OMDb API (Recommended)</strong> - Simple email registration
+                        <small>Get key at: <a href="http://www.omdbapi.com/" target="_blank">omdbapi.com</a> - 1,000 requests/day</small>
                     </div>
                     <div class="alt-option">
                         <strong>📺 TVMaze API</strong> - No registration required!
-                        <small>TV shows only, works immediately</small>
+                        <small>TV shows only, unlimited requests</small>
                     </div>
-                </div>
-                <div class="demo-option">
-                    <p><strong>Just want to test?</strong></p>
-                    <button id="demo-mode-btn" class="btn btn-secondary">
-                        <i class="fas fa-play"></i> Try Demo Mode
-                    </button>
-                    <small>Demo mode includes popular movies and TV shows for testing</small>
+                    <div class="alt-option">
+                        <strong>🎭 TMDb API</strong> - Industry standard
+                        <small>Get key at: <a href="https://www.themoviedb.org/settings/api" target="_blank">TMDb</a> - When available</small>
+                    </div>
                 </div>
             </div>
         </div>
@@ -75,7 +85,7 @@
 
             <!-- Navigation Tabs -->
             <nav class="nav-tabs">
-                <button class="nav-tab active" data-tab="search-results">Search Results</button>
+                <button class="nav-tab active" data-tab="search-results">Home</button>
                 <button class="nav-tab" data-tab="watchlist">My Watchlist</button>
                 <button class="nav-tab" data-tab="watched">Watched</button>
             </nav>
@@ -87,7 +97,47 @@
                     <div id="loading" class="loading" style="display: none;">
                         <i class="fas fa-spinner fa-spin"></i> Searching...
                     </div>
-                    <div id="search-results-grid" class="content-grid"></div>
+                    
+                    <!-- Homepage Sections (shown when no search) -->
+                    <div id="homepage-sections">
+                        <!-- Trending Now Section -->
+                        <section class="homepage-section">
+                            <div class="section-header">
+                                <h2><i class="fas fa-fire"></i> Trending Now</h2>
+                                <p>Popular movies and series everyone's watching</p>
+                            </div>
+                            <div id="trending-grid" class="content-grid"></div>
+                        </section>
+
+                        <!-- New Releases Section -->
+                        <section class="homepage-section">
+                            <div class="section-header">
+                                <h2><i class="fas fa-star"></i> New Releases</h2>
+                                <p>Latest additions to streaming platforms</p>
+                            </div>
+                            <div id="new-releases-grid" class="content-grid"></div>
+                        </section>
+
+                        <!-- Top Rated Section -->
+                        <section class="homepage-section">
+                            <div class="section-header">
+                                <h2><i class="fas fa-trophy"></i> Top Rated</h2>
+                                <p>Highest rated movies and series</p>
+                            </div>
+                            <div id="top-rated-grid" class="content-grid"></div>
+                        </section>
+
+                        <!-- Binge-Worthy Series Section -->
+                        <section class="homepage-section">
+                            <div class="section-header">
+                                <h2><i class="fas fa-tv"></i> Binge-Worthy Series</h2>
+                                <p>Perfect series for your next binge session</p>
+                            </div>
+                            <div id="binge-series-grid" class="content-grid"></div>
+                        </section>
+                    </div>
+                    
+                    <div id="search-results-grid" class="content-grid" style="display: none;"></div>
                 </div>
 
                 <!-- Watchlist Tab -->
@@ -134,9 +184,9 @@
             <div class="setting-item">
                 <label>API Provider:</label>
                 <select id="api-provider-select">
-                    <option value="tmdb">TMDb (The Movie Database)</option>
-                    <option value="omdb">OMDb (Open Movie Database)</option>
+                    <option value="omdb">OMDb (Open Movie Database) - Recommended</option>
                     <option value="tvmaze">TVMaze (TV Shows Only - No Key Required)</option>
+                    <option value="tmdb">TMDb (The Movie Database)</option>
                 </select>
                 <div id="api-provider-info" class="api-info"></div>
             </div>
@@ -153,7 +203,6 @@
         </div>
     </div>
 
-    <script src="demo-data.js"></script>
     <script src="alternative-apis.js"></script>
     <script src="script.js"></script>
 </body>

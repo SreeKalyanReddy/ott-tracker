@@ -180,6 +180,38 @@ body {
     text-decoration: underline;
 }
 
+.api-selection {
+    margin-bottom: 1rem;
+}
+
+.api-selection label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.api-selection select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background: var(--background-darker);
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.quick-setup {
+    margin-top: 1rem;
+    text-align: center;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.quick-setup .btn {
+    width: 100%;
+}
+
 .api-info {
     margin-top: 0.5rem;
     padding: 0.5rem;
@@ -200,6 +232,112 @@ body {
 #api-provider-select {
     width: 100%;
     margin-bottom: 0.5rem;
+}
+
+/* Homepage Sections */
+.homepage-section {
+    margin-bottom: 3rem;
+}
+
+.section-header {
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.section-header h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.section-header h2 i {
+    color: var(--primary-color);
+    font-size: 1.5rem;
+}
+
+.section-header p {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    margin-bottom: 0;
+}
+
+/* Featured content styling */
+.homepage-section .content-card {
+    transition: var(--transition);
+}
+
+.homepage-section .content-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 40px rgba(229, 9, 20, 0.3);
+}
+
+/* Trending section special styling */
+#trending-grid .content-card:first-child {
+    position: relative;
+    overflow: visible;
+}
+
+#trending-grid .content-card:first-child::before {
+    content: "🔥 #1 TRENDING";
+    position: absolute;
+    top: -10px;
+    left: 0;
+    right: 0;
+    background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
+    color: white;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-align: center;
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    z-index: 10;
+}
+
+/* New releases badges */
+#new-releases-grid .content-card {
+    position: relative;
+}
+
+#new-releases-grid .content-card::after {
+    content: "NEW";
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: var(--success-color);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+    font-weight: bold;
+    border-radius: 12px;
+    z-index: 10;
+}
+
+/* Top rated styling */
+#top-rated-grid .content-card .card-rating {
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+/* Responsive adjustments for homepage */
+@media (max-width: 768px) {
+    .section-header h2 {
+        font-size: 1.5rem;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .section-header h2 i {
+        font-size: 1.3rem;
+    }
+    
+    .homepage-section {
+        margin-bottom: 2rem;
+    }
 }
 
 /* Input Groups */
